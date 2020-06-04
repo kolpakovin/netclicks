@@ -21,7 +21,9 @@ const leftMenu = document.querySelector('.left-menu'),
     tvShowsHead = document.querySelector('.tv-shows__head'),
     posterWrapper = document.querySelector('.poster__wrapper'),
     modalContent = document.querySelector('.modal__content'),
-    pagination = document.querySelector('.pagination');
+    pagination = document.querySelector('.pagination'),
+    trailer = document.getElementById('trailer'),
+    headTrailer = document.getElementById('head-trailer');
 
 const loader = document.createElement('div');
 loader.className = 'loading';
@@ -59,7 +61,9 @@ const DBService = class {
 
     getToday = () => this.getData(`${SERVER}tv/airing_today?api_key=${API_KEY}&language=en-US`)
 
-    getWeek = () => this.getData(`${SERVER}tv/on_the_air?api_key=${API_KEY}&language=en-US`)
+    getWeek = () => this.getData(`${SERVER}tv/on_the_air?api_key=${API_KEY}&language=en-US`);
+
+    getVideo = id => this.getData(`${SERVER}tv/${id}/videos?api_key=${API_KEY}&language=en-US`);
 }
 
 const dBService = new DBService();
@@ -104,7 +108,7 @@ const renderCard = (response, target) => {
 
         pagination.textContent = '';
 
-        if (response.total_pages > 1) {
+        if (e.target && response.total_pages > 1) {
             for (let i = 1; i <= response.total_pages; i++) {
                 pagination.innerHTML += `<li><a href="#" class="pages">${i}</a></li>`
             }
@@ -213,6 +217,30 @@ tvShowsList.addEventListener('click', e => {
                 rating.textContent = response.vote_average;
                 description.textContent = response.overview;
                 modalLink.href = response.homepage;
+                return response.id
+            })
+            .then(dBService.getVideo)
+            .then(response => {
+                headTrailer.classList.add('hide');
+                trailer.textContent = '';
+                if (response.results.length) {
+                    headTrailer.classList.remove('hide');
+                    response.results.forEach(item => {
+                        const trailerItem = document.createElement('li');
+
+                        trailerItem.innerHTML = `
+                          <iframe
+                              width="400"
+                              height="300"
+                              src="https://www.youtube.com/embed/${item.key}"
+                              frameborder="0" 
+                              allowfullscreen>
+                          </iframe>
+                          <h4>${item.name}</h4>
+                        `
+                        trailer.append(trailerItem);
+                    })
+                }
             })
             .then(() => {
                 document.body.style.overflow = 'hidden';
